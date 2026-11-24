@@ -34,3 +34,85 @@ movies |>
   )
 ```
 
+```{r}
+# Drop zero scores, compute gap, and summarize genres with at least 100 rows
+movies_gap <- movies_clean |>
+  filter(tomatoMeter != 0, audienceScore != 0) |>
+  mutate(gap = tomatoMeter - audienceScore)
+
+movies_summary <- movies_gap |>
+  summarize(
+    mean_gap = mean(gap),
+    n = n(),
+    .by = genre
+  ) |>
+  filter(n >= 100) |>
+  arrange(mean_gap)
+```
+
+```{r}
+# Plot horizontal bars ordered from most audience-favored to most critic-favored
+movies_summary |>
+  ggplot(aes(x = mean_gap, y = fct_reorder(genre, mean_gap))) +
+  geom_col() +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(
+    title = "Critics Favor Horror and Documentaries; Audiences Prefer Action",
+    subtitle = "Mean Tomatometer minus Audience Score for genres with at least 100 films",
+    x = "Average Gap (Tomatometer - Audience Score)",
+    y = "Genre"
+  )
+```
+
+```{r}
+# Filter to the 8 live-action Spider-Man films, assign actor by title pattern, and sort by release date
+spiderman <- movies |>
+  filter(
+    title %in% c(
+      "Spider-Man",
+      "Spider-Man 2",
+      "Spider-Man 3",
+      "The Amazing Spider-Man",
+      "The Amazing Spider-Man 2",
+      "Spider-Man: Homecoming",
+      "Spider-Man: Far From Home",
+      "Spider-Man: No Way Home"
+    )
+  ) |>
+  mutate(
+    actor = case_when(
+      str_detect(title, "Amazing") ~ "Andrew Garfield",
+      str_detect(title, ":") ~ "Tom Holland",
+      .default = "Tobey Maguire"
+    )
+  ) |>
+  arrange(releaseDateTheaters)
+
+# Reshape both score columns so ggplot draws two lines with a legend
+spiderman |>
+  mutate(title = fct_inorder(title)) |>
+  pivot_longer(
+    cols = c(tomatoMeter, audienceScore),
+    names_to = "score_type",
+    values_to = "score"
+  ) |>
+  mutate(
+    score_type = if_else(
+      score_type == "tomatoMeter",
+      "Tomatometer (Critics)",
+      "Audience Score"
+    )
+  ) |>
+  ggplot(aes(x = title, y = score, color = score_type, group = score_type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2.5) +
+  labs(
+    title = "Audience Scores Climbed Past Critics by the Tom Holland Era",
+    subtitle = "Rotten Tomatoes critic and audience scores across live-action Spider-Man films in release order",
+    x = "Film (Release Order)",
+    y = "Score",
+    color = "Rating Source"
+  ) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1))
+```
+
