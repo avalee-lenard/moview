@@ -11,6 +11,26 @@ execute:
 library(tidyverse)
 
 movies <- read_csv("data/movies.csv")
-movies
+```
+
+```{r}
+#| cache: true
+
+# Split comma-separated genres into one genre per row
+movies_clean <- movies |>
+  separate_longer_delim(genre, delim = ", ")
+```
+
+```{r}
+# Plot histogram of critic scores in 5-point bins
+movies |>
+  ggplot(aes(x = tomatoMeter)) +
+  geom_histogram(binwidth = 5, color = "white") +
+  labs(
+    title = "Distribution of Rotten Tomatoes Critic Scores",
+    subtitle = "Across 29,783 films",
+    x = "Tomatometer Score",
+    y = "Count"
+  )
 ```
 
